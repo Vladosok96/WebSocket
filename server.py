@@ -39,19 +39,23 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                 return
             self.write_message('alive')
 
-        if split_message[0].lower() == 'bye':
+        elif split_message[0].lower() == 'bye':
             self.write_message(f"bye variant {self.client_id}")
             self.close()
 
-        if split_message[0].lower() == 'hello':
+        elif split_message[0].lower() == 'hello':
             self.client_id = int(split_message[1])
             self.write_message(f"hello variant {self.client_id}")
 
-        if split_message[0].lower() == 'encrypt':
+        elif split_message[0].lower() == 'encrypt':
             pass
 
-        if split_message[0].lower() == 'decrypt':
+        elif split_message[0].lower() == 'decrypt':
             pass
+        else:
+            print(message)
+            self.write_message(message)
+
 
     def on_close(self):
         print("WebSocket закрыт")

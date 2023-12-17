@@ -9,6 +9,10 @@ async def connect():
 
         while True:
             message = input("Введите сообщение: ")
+
+            if message == 'test':
+                message = 'encrypt aaaaaaaaaaaaaa\x10sssssssss'
+
             await websocket.send(message)
             print(f"Отправлено: {message}")
 
