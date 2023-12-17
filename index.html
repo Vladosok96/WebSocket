@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Example</title>
+</head>
+<body>
+    <h1>WebSocket Example</h1>
+
+    <div id="output"></div>
+
+    <input type="text" id="messageInput" placeholder="Введите сообщение">
+    <button onclick="sendMessage()">Отправить</button>
+
+    <script>
+        var ws = new WebSocket("ws://localhost:8888/websocket");
+
+        ws.onopen = function(event) {
+            displayMessage("WebSocket открыт");
+        };
+
+        ws.onmessage = function(event) {
+            displayMessage("Получено сообщение: " + event.data);
+        };
+
+        ws.onclose = function(event) {
+            displayMessage("WebSocket закрыт");
+        };
+
+        function sendMessage() {
+            var messageInput = document.getElementById("messageInput");
+            var message = messageInput.value;
+            ws.send(message);
+            displayMessage("Вы сказали: " + message);
+            messageInput.value = "";
+        }
+
+        function displayMessage(message) {
+            var outputDiv = document.getElementById("output");
+            var p = document.createElement("p");
+            p.innerHTML = message;
+            outputDiv.appendChild(p);
+        }
+    </script>
+</body>
+</html>
