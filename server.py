@@ -48,14 +48,13 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             self.write_message(f"hello variant {self.client_id}")
 
         elif split_message[0].lower() == 'encrypt':
-            pass
+            self.write_message(f"norm: {split_message[2]}")
 
         elif split_message[0].lower() == 'decrypt':
             pass
         else:
             print(message)
             self.write_message(message)
-
 
     def on_close(self):
         print("WebSocket закрыт")
@@ -65,18 +64,11 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
                 break
 
 
-def close_socket_by_id(client_id):
-    websocket_handler = WebSocketHandler.connected_clients.get(client_id)
-    if websocket_handler:
-        # print(client_id, websocket_handler)
-        websocket_handler.close()
-
-
 def make_app():
     return tornado.web.Application([
         (r'/', MainHandler),
-        (r'/websocket', WebSocketHandler),
-    ])
+        (r'/websocket', WebSocketHandler)
+    ], websocket_message_max_size=104857600)
 
 
 def start_tornado():
