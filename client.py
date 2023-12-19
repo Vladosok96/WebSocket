@@ -10,7 +10,7 @@ async def connect(address):
         window = gui.create_client_window()
 
         while True:
-            event, values = window.read()
+            event, values = window.read(timeout=1000)
 
             if event == gui.psg.WIN_CLOSED:
                 break
