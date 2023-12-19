@@ -5,7 +5,10 @@ import tornado.websocket
 import gui
 
 import threading
+import struct
+import base64
 
+import DES
 
 client_counter = 1
 
@@ -30,6 +33,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         print(f"WebSocket открыт c id: {self.client_id}")
 
     def on_message(self, message):
+        print(message)
         split_message = message.split()
 
         if split_message[0].lower() == 'ping':
@@ -48,10 +52,83 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             self.write_message(f"hello variant {self.client_id}")
 
         elif split_message[0].lower() == 'encrypt':
-            self.write_message(f"norm: {split_message[2]}")
+            file_blocks = []
+            output_file_blocks = []
+            password = split_message[2]
+
+            # Чтение сообщения и разделение на блоки по 64 бит
+            i = 0
+            while True:
+                file_block = bytes(split_message[1][i:(i+8)], 'utf-8')
+                if len(file_block) == 0:
+                    break
+                if len(file_block) < 8:
+                    file_block += b'\x00' * (8 - len(file_block))
+                int_file_block = struct.unpack('Q', file_block)[0]
+                file_blocks.append(int_file_block)
+                i += 8
+
+            # Чтение пароля перевод в 7-ми байтовое число
+            password = bytes(password[:7], 'utf-8')
+            int_password = int.from_bytes(password, 'big')
+
+            # Применение функции шифрования DES на каждый блок в отдельности (ECB)
+            progress = 0
+            for block in file_blocks:
+                encrypted_block = DES.DES(block, int_password, DES.ENCRYPTION)
+                output_file_blocks.append(encrypted_block)
+                progress += 1
+                print(f'processing: {progress}/{len(file_blocks)}')
+
+            # Вывод в файл
+            output = b''
+            for block in output_file_blocks:
+                packed_data = struct.pack('Q', block)
+                output += packed_data
+
+            base64_data = base64.b64encode(output)
+            self.write_message(base64_data.decode('utf-8'))
 
         elif split_message[0].lower() == 'decrypt':
-            pass
+            file_blocks = []
+            output_file_blocks = []
+            password = split_message[2]
+
+            # Чтение сообщения и разделение на блоки по 64 бит
+            bytes_data = base64.b64decode(split_message[1])
+            i = 0
+            while True:
+                file_block = bytes_data[i:(i + 8)]
+                if len(file_block) == 0:
+                    break
+                if len(file_block) < 8:
+                    file_block += b'\x00' * (8 - len(file_block))
+                int_file_block = struct.unpack('Q', file_block)[0]
+                file_blocks.append(int_file_block)
+                i += 8
+
+            # Чтение пароля перевод в 7-ми байтовое число
+            password = bytes(password[:7], 'utf-8')
+            int_password = int.from_bytes(password, 'big')
+
+            # Применение функции шифрования DES на каждый блок в отдельности (ECB)
+            progress = 0
+            for block in file_blocks:
+                encrypted_block = DES.DES(block, int_password, DES.DECRYPTION)
+                output_file_blocks.append(encrypted_block)
+                progress += 1
+                print(f'processing: {progress}/{len(file_blocks)}')
+
+            # Вывод в файл
+            output = b''
+            for block in output_file_blocks:
+                packed_data = struct.pack('Q', block)
+                output += packed_data
+
+            base64_data = base64.b64encode(output)
+            self.write_message(base64_data.decode('utf-8'))
+
+
         else:
             print(message)
             self.write_message(message)
@@ -79,7 +156,7 @@ def start_tornado():
 
 
 def gui_thread():
-    window = gui.create_window()
+    window = gui.create_server_window()
     last_client_list = []
     while True:
         event, values = window.read(timeout=10)
